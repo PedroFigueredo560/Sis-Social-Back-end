@@ -1,0 +1,3 @@
+Para instalar o as dependencias da forma correta basta copiar o seguinte código no terminal:
+
+pip install -r requirements.txt
