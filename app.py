@@ -146,7 +146,7 @@ def update_ben():
     return jsonify({'message': 'User successfully updated!'})
 
 @app.route('/create_finac', methods = ['POST'])
-def create_func():
+def create_finac():
     data=request.get_json()()
     id = data.get('id')
     data_reg = data.get('data_reg')
