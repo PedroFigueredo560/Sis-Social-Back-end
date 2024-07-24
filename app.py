@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from database import app, db
 from model.beneficiario import Beneficiario
 from model.funcionario import Funcionario
-
+from model.financeiro import Financa 
 
 
 #Isso não passa de um main que pode ser alterado
@@ -145,6 +145,58 @@ def update_ben():
     
     return jsonify({'message': 'User successfully updated!'})
 
+@app.route('/create_finac', methods = ['POST'])
+def create_func():
+    data=request.get_json()()
+    id = data.get('id')
+    data_reg = data.get('data_reg')
+    descricao = data.get('descricao')
+    categoria = data.get('categoria')
+    valor = data.get('valor')
+    
+    new_finac = Financa(id, data_reg, descricao, categoria, valor)
+    db.session.add(new_finac)
+    db.session.commit
+    return jsonify(new_finac.to_dictionary())
+
+@app.route('/get_finac', methods = ['GET'])
+def get_finac():
+    finac = Financa.query.all
+    return jsonify([{'id': finac.id}for finac in finac])
+    
+@app.route('/delete_finac', methods = ['DELETE'])
+def delete_finac():
+    finac = Financa.query.get(request.json.get('id'))
+    if finac is None:
+        return jsonify({'error': 'Financial already deleted or not found!'})
+    
+    db.session.delete(finac)
+    db.session.commit()
+    
+    return jsonify({'message': 'Finacial deleted successfully!'})
+
+@app.route('/update_finac', methods = ['PUT'])
+def update_finac():
+    finac = Financa.query.get(request.json.get('id'))
+    
+    if finac is None:
+        return jsonify({'error': 'Finacial not found!'})
+    
+    data = request.json
+    if 'id' in data:
+        finac.name_func = data['id']
+    if 'data_reg' in data:
+        finac.data_reg = data['data_reg']
+    if 'descricao' in data:
+        finac.descricao = data['descricao']
+    if 'categoria' in data:
+        finac.categoria = data['categoria']
+    if 'valor' in data:
+        finac.valor = data['valor']
+        
+    db.session.commit()
+    
+    return jsonify({'message': 'Financial successfully updated!'})
 @app.route('/')
 def hello_world():
     return 'Hello World'
