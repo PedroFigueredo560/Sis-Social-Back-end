@@ -8,7 +8,7 @@ CORS(app, origins='http://localhost:5173/')
 
 
 #configure database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://your_username:your_password@localhost/sis_social'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:senha@localhost/sis_social'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)

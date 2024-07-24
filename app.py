@@ -149,3 +149,120 @@ def hello_world():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+
+
+# CONEXÃO FUNCIONANDO
+
+# from flask import Flask, request, jsonify
+# from flask_cors import CORS
+# from database import app, db
+# from model.beneficiario import Beneficiario
+# from model.agendamento import Agendamento
+# from datetime import datetime
+
+# # Configuração do CORS
+# CORS(app)
+
+# @app.route('/create_ben', methods=['POST'])
+# def create_ben():
+#     data = request.json
+#     try:
+#         # Criação do novo beneficiário usando os campos corretos
+#         new_beneficiario = Beneficiario(
+#             name_ben=data.get('name_ben'),
+#             cpf=data.get('cpf'),
+#             services=data.get('services'),
+#             user_ben=data.get('user_ben'),
+#             password_ben=data.get('password_ben')
+#         )
+#         db.session.add(new_beneficiario)
+#         db.session.commit()
+#         return jsonify({'message': 'Beneficiário criado com sucesso'}), 201
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         return jsonify({'error': str(e)}), 400
+
+# @app.route('/create_agendamento', methods=['POST'])
+# def create_agendamento():
+#     data = request.get_json()
+#     try:
+#         new_agendamento = Agendamento(
+#             cpf=data['cpf'],
+#             nome=data['nome'],
+#             telefone=data['telefone'],
+#             data=datetime.fromisoformat(data['data']),
+#             descricao=data['descricao'],
+#             status=data['status'],
+#             observacoes=data.get('observacoes')
+#         )
+#         db.session.add(new_agendamento)
+#         db.session.commit()
+#         return jsonify(new_agendamento.to_dictionary()), 201
+#     except Exception as e:
+#         db.session.rollback()
+#         print(f"Error: {e}")
+#         return jsonify({'error': str(e)}), 400
+
+# @app.route('/agendamentos', methods=['GET'])
+# def get_agendamentos():
+#     try:
+#         agendamentos = Agendamento.query.all()
+#         return jsonify([a.to_dictionary() for a in agendamentos]), 200
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         return jsonify({'error': str(e)}), 400
+
+# @app.route('/agendamento/<int:id>', methods=['GET'])
+# def get_agendamento(id):
+#     try:
+#         agendamento = Agendamento.query.get(id)
+#         if not agendamento:
+#             return jsonify({'error': 'Agendamento não encontrado'}), 404
+#         return jsonify(agendamento.to_dictionary()), 200
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         return jsonify({'error': str(e)}), 400
+
+# @app.route('/agendamento/<int:id>', methods=['PUT'])
+# def update_agendamento(id):
+#     data = request.get_json()
+#     try:
+#         agendamento = Agendamento.query.get(id)
+#         if not agendamento:
+#             return jsonify({'error': 'Agendamento não encontrado'}), 404
+
+#         agendamento.cpf = data.get('cpf', agendamento.cpf)
+#         agendamento.nome = data.get('nome', agendamento.nome)
+#         agendamento.telefone = data.get('telefone', agendamento.telefone)
+#         agendamento.data = datetime.fromisoformat(data.get('data', agendamento.data.isoformat()))
+#         agendamento.descricao = data.get('descricao', agendamento.descricao)
+#         agendamento.status = data.get('status', agendamento.status)
+#         agendamento.observacoes = data.get('observacoes', agendamento.observacoes)
+        
+#         db.session.commit()
+#         return jsonify(agendamento.to_dictionary()), 200
+#     except Exception as e:
+#         db.session.rollback()
+#         print(f"Error: {e}")
+#         return jsonify({'error': str(e)}), 400
+
+# @app.route('/agendamento/<int:id>', methods=['DELETE'])
+# def delete_agendamento(id):
+#     try:
+#         agendamento = Agendamento.query.get(id)
+#         if not agendamento:
+#             return jsonify({'error': 'Agendamento não encontrado'}), 404
+
+#         db.session.delete(agendamento)
+#         db.session.commit()
+#         return jsonify({'message': 'Agendamento deletado com sucesso'}), 200
+#     except Exception as e:
+#         db.session.rollback()
+#         print(f"Error: {e}")
+#         return jsonify({'error': str(e)}), 400
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
