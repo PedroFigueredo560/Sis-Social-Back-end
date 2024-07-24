@@ -2,7 +2,7 @@ from database import db
 
 class Funcionario(db.Model):
     name_func = db.Column(db.String(50), nullable = False)
-    cpf = db.Column(db.String(11), nullable = False, primary_key = True)
+    cpf = db.Column(db.String(14), nullable = False, primary_key = True)
     job = db.Column(db.String(50), nullable = False)
     user_func = db.Column(db.String(50), nullable = False)
     password_func = db.Column(db.String(50), nullable = False)

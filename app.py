@@ -20,17 +20,18 @@ from model.funcionario import Funcionario
 
 @app.route('/create_func', methods = ['POST'])
 def create_func():
-    if request.method == 'POST':
-        name = request.json['name_func']
-        cpf = request.json['cpf']
-        job = request.json['job']
-        user = request.json['user_func']
-        password = request.json['password_func']
-        
-        new_func = Funcionario(name, cpf, job, user, password)
-        db.session.add(new_func)
-        db.session.commit
-        return jsonify(new_func.to_dictionary())
+    data=request.get_json()()
+    
+    name = data.get('name_func')
+    cpf = data.get('cpf')
+    job = data.get('job')
+    user = data.get('user_func')
+    password = data.get('password_func')
+    
+    new_func = Funcionario(name, cpf, job, user, password)
+    db.session.add(new_func)
+    db.session.commit
+    return jsonify(new_func.to_dictionary())
     
 @app.route('/get_func', methods = ['GET'])
 def get_func():
@@ -84,16 +85,17 @@ def update_func():
 
 @app.route('/create_ben', methods = ['POST'])
 def create_ben():
-    if request.method == 'POST':
-        name = request.json['name_ben']
-        cpf = request.json['cpf']
-        user = request.json['user_ben']
-        password = request.json['password_ben']
-        
-        new_ben = Beneficiario(name, cpf, user, password)
-        db.session.add(new_ben)
-        db.session.commit
-        return jsonify(new_ben.to_dictionary())
+    data=request.get_json()
+    
+    name = data.get('name_ben')
+    cpf = data.get('cpf')
+    user = data.get('user_ben')
+    password = data.get('password_ben')
+    
+    new_ben = Beneficiario(name, cpf, 'solicitante', user, password)
+    db.session.add(new_ben)
+    db.session.commit
+    return jsonify(new_ben.to_dictionary())
     
 @app.route('/get_ben', methods = ['GET'])
 def get_ben():
@@ -146,6 +148,9 @@ def update_ben():
 @app.route('/')
 def hello_world():
     return 'Hello World'
+
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)

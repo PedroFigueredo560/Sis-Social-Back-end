@@ -2,7 +2,7 @@ from database import db
 
 class Beneficiario(db.Model):
     name_ben = db.Column(db.String(50), nullable = False)
-    cpf = db.Column(db.String(11), nullable = False, primary_key = True)
+    cpf = db.Column(db.String(14), nullable = False, primary_key = True)
     services = db.Column(db.String(50), nullable = False)
     user_ben = db.Column(db.String(50), nullable = False)
     password_ben = db.Column(db.String(50), nullable = False)
