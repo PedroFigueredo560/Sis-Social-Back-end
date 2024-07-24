@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from database import app, db
 from model.beneficiario import Beneficiario
 from model.funcionario import Funcionario
-
+from model.financeiro import Financa
 
 
 #Isso não passa de um main que pode ser alterado
@@ -20,17 +20,18 @@ from model.funcionario import Funcionario
 
 @app.route('/create_func', methods = ['POST'])
 def create_func():
-    if request.method == 'POST':
-        name = request.json['name_func']
-        cpf = request.json['cpf']
-        job = request.json['job']
-        user = request.json['user_func']
-        password = request.json['password_func']
-        
-        new_func = Funcionario(name, cpf, job, user, password)
-        db.session.add(new_func)
-        db.session.commit
-        return jsonify(new_func.to_dictionary())
+    data=request.get_json()()
+    
+    name = data.get('name_func')
+    cpf = data.get('cpf')
+    job = data.get('job')
+    user = data.get('user_func')
+    password = data.get('password_func')
+    
+    new_func = Funcionario(name, cpf, job, user, password)
+    db.session.add(new_func)
+    db.session.commit
+    return jsonify(new_func.to_dictionary())
     
 @app.route('/get_func', methods = ['GET'])
 def get_func():
@@ -84,16 +85,17 @@ def update_func():
 
 @app.route('/create_ben', methods = ['POST'])
 def create_ben():
-    if request.method == 'POST':
-        name = request.json['name_ben']
-        cpf = request.json['cpf']
-        user = request.json['user_ben']
-        password = request.json['password_ben']
-        
-        new_ben = Beneficiario(name, cpf, user, password)
-        db.session.add(new_ben)
-        db.session.commit
-        return jsonify(new_ben.to_dictionary())
+    data=request.get_json()
+    
+    name = data.get('name_ben')
+    cpf = data.get('cpf')
+    user = data.get('user_ben')
+    password = data.get('password_ben')
+    
+    new_ben = Beneficiario(name, cpf, 'solicitante', user, password)
+    db.session.add(new_ben)
+    db.session.commit
+    return jsonify(new_ben.to_dictionary())
     
 @app.route('/get_ben', methods = ['GET'])
 def get_ben():
@@ -143,9 +145,64 @@ def update_ben():
     
     return jsonify({'message': 'User successfully updated!'})
 
+@app.route('/create_finac', methods = ['POST'])
+def create_finac():
+    data=request.get_json()()
+    id = data.get('id')
+    data_reg = data.get('data_reg')
+    descricao = data.get('descricao')
+    categoria = data.get('categoria')
+    valor = data.get('valor')
+    
+    new_finac = Financa(id, data_reg, descricao, categoria, valor)
+    db.session.add(new_finac)
+    db.session.commit
+    return jsonify(new_finac.to_dictionary())
+
+@app.route('/get_finac', methods = ['GET'])
+def get_finac():
+    finac = Financa.query.all
+    return jsonify([{'id': finac.id}for finac in finac])
+    
+@app.route('/delete_finac', methods = ['DELETE'])
+def delete_finac():
+    finac = Financa.query.get(request.json.get('id'))
+    if finac is None:
+        return jsonify({'error': 'Financial already deleted or not found!'})
+    
+    db.session.delete(finac)
+    db.session.commit()
+    
+    return jsonify({'message': 'Finacial deleted successfully!'})
+
+@app.route('/update_finac', methods = ['PUT'])
+def update_finac():
+    finac = Financa.query.get(request.json.get('id'))
+    
+    if finac is None:
+        return jsonify({'error': 'Finacial not found!'})
+    
+    data = request.json
+    if 'id' in data:
+        finac.name_func = data['id']
+    if 'data_reg' in data:
+        finac.data_reg = data['data_reg']
+    if 'descricao' in data:
+        finac.descricao = data['descricao']
+    if 'categoria' in data:
+        finac.categoria = data['categoria']
+    if 'valor' in data:
+        finac.valor = data['valor']
+        
+    db.session.commit()
+    
+    return jsonify({'message': 'Financial successfully updated!'})
 @app.route('/')
 def hello_world():
     return 'Hello World'
+
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)

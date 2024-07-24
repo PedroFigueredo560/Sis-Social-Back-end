@@ -1,14 +1,13 @@
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 
-#initialise flask api
+# initialise flask api
 app = Flask(__name__)
-CORS(app, origins='http://localhost:5173/')
-
+CORS(app, origins=['http://localhost:5173'])  # Specify allowed origin
 
 #configure database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:senha@localhost/sis_social'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost/sis_social'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
