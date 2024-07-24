@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from database import app, db
 from model.beneficiario import Beneficiario
 from model.funcionario import Funcionario
-from model.financeiro import Financa 
+from model.financeiro import Financa
 
 
 #Isso não passa de um main que pode ser alterado
