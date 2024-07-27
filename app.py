@@ -333,6 +333,9 @@ def delete_agendamento(id):
         db.session.rollback()
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
+    
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)
