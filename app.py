@@ -225,6 +225,7 @@ from model.auth_decorator import token_required
 from functools import wraps
 import pytz
 import jwt
+from model.funcionario import Funcionario
 
 # Configuração do CORS
 CORS(app)
@@ -270,6 +271,15 @@ def check_cpf(cpf):
             return jsonify({'message': 'CPF encontrado'}), 200
         else:
             return jsonify({'message': 'CPF não encontrado'}), 404
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/get_func', methods = ['GET'])
+def get_func():
+    try:
+        funcs = Agendamento.query.all()
+        return jsonify([func.to_dictionary() for func in funcs]), 200
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400

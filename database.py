@@ -4,7 +4,6 @@ from flask_cors import CORS
 
 # initialise flask api
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:5173'])  # Specify allowed origin
 
 #configure database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:jainer.18@localhost/sis_social'
