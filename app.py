@@ -220,6 +220,7 @@ from database import app, db
 from model.beneficiario import Beneficiario
 from model.agendamento import Agendamento
 from datetime import datetime
+from model.funcionario import Funcionario
 
 # Configuração do CORS
 CORS(app)
@@ -255,6 +256,15 @@ def validate_login_ben():
         return jsonify({'message': 'logado com sucesso'})
     else:
         return jsonify({'message': 'Usuário não encontrado'}), 401
+    
+@app.route('/get_func', methods = ['GET'])
+def get_func():
+    try:
+        funcs = Agendamento.query.all()
+        return jsonify([func.to_dictionary() for func in funcs]), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/create_agendamento', methods=['POST'])
 def create_agendamento():
