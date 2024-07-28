@@ -219,16 +219,22 @@ from flask_cors import CORS
 from database import app, db
 from model.beneficiario import Beneficiario
 from model.agendamento import Agendamento
-from datetime import datetime
+from model.horarios_disponiveis import DisponibilidadeHorarios
+from datetime import datetime, timezone, timedelta
+from model.auth_decorator import token_required
+from functools import wraps
+import pytz
+import jwt
 
 # Configuração do CORS
 CORS(app)
+
+app.config['SECRET_KEY'] = '0098766754'
 
 @app.route('/create_ben', methods=['POST'])
 def create_ben():
     data = request.json
     try:
-        # Criação do novo beneficiário usando os campos corretos
         new_beneficiario = Beneficiario(
             name_ben=data.get('name_ben'),
             cpf=data.get('cpf'),
@@ -242,8 +248,7 @@ def create_ben():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
-    
-@app.route('/validate_login_ben', methods = ['POST'])
+@app.route('/validate_login_ben', methods=['POST'])
 def validate_login_ben():
     data = request.get_json()
     user = data.get('user')
@@ -252,22 +257,49 @@ def validate_login_ben():
     ben = Beneficiario.query.filter_by(user_ben=user, password_ben=password).first()
 
     if ben:
-        return jsonify({'message': 'logado com sucesso'})
+        # Gera um token JWT
+        token = jwt.encode({'user': ben.user_ben}, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'message': 'Logado com sucesso', 'token': token})
     else:
         return jsonify({'message': 'Usuário não encontrado'}), 401
+@app.route('/check_cpf/<string:cpf>', methods=['GET'])
+def check_cpf(cpf):
+    try:
+        beneficiario = Beneficiario.query.filter_by(cpf=cpf).first()
+        if beneficiario:
+            return jsonify({'message': 'CPF encontrado'}), 200
+        else:
+            return jsonify({'message': 'CPF não encontrado'}), 404
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/create_agendamento', methods=['POST'])
+@token_required
 def create_agendamento():
     data = request.get_json()
     try:
+        beneficiario = Beneficiario.query.filter_by(cpf=data['cpf']).first()
+        if not beneficiario:
+            return jsonify({'error': 'CPF não encontrado na base de dados'}), 400
+
+        agendamento_data = datetime.fromisoformat(data['data']).astimezone(timezone.utc)
+        print(f"Agendamento data recebida: {agendamento_data}")
+
+        # Verifica se já existe um agendamento para a mesma data e hora
+        existing_appointment = Agendamento.query.filter_by(data=agendamento_data).first()
+        if existing_appointment:
+            return jsonify({"error": "Já existe um agendamento para esta data e hora."}), 400
+
         new_agendamento = Agendamento(
             cpf=data['cpf'],
             nome=data['nome'],
             telefone=data['telefone'],
-            data=datetime.fromisoformat(data['data']),
+            data=agendamento_data,
             descricao=data['descricao'],
             status=data['status'],
-            observacoes=data.get('observacoes')
+            observacoes=data.get('observacoes'),
+            email_notification=data.get('email_notification', False)
         )
         db.session.add(new_agendamento)
         db.session.commit()
@@ -333,9 +365,56 @@ def delete_agendamento(id):
         db.session.rollback()
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
-    
-with app.app_context():
-    db.create_all()
+@app.route('/available_slots', methods=['GET'])
+def available_slots():
+    date_str = request.args.get('date')
+    if not date_str:
+        return jsonify({"error": "Data não fornecida"}), 400
+    try:
+        date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        existing_agendamentos = Agendamento.query.filter(
+            Agendamento.data.between(
+                datetime.combine(date, datetime.min.time()),
+                datetime.combine(date, datetime.max.time())
+            ),
+            Agendamento.status != 'cancelado'
+        ).all()
+
+        slots = []
+        start_times = ['08:00', '14:00']
+        end_times = ['11:00', '17:00']
+        duration = timedelta(minutes=50)
+        
+        for start_time, end_time in zip(start_times, end_times):
+            start = datetime.combine(date, datetime.strptime(start_time, '%H:%M').time())
+            end = datetime.combine(date, datetime.strptime(end_time, '%H:%M').time())
+            
+            while start + duration <= end:
+                slot_end = start + duration
+                slot = start.strftime('%H:%M') + '-' + slot_end.strftime('%H:%M')
+                
+                slot_start = start
+                slot_end = slot_end
+                is_occupied = any(
+                    agendamento.data <= slot_end and
+                    agendamento.data + timedelta(minutes=50) > slot_start
+                    for agendamento in existing_agendamentos
+                )
+                
+                if not is_occupied:
+                    slots.append(slot)
+                
+                start = slot_end
+
+        return jsonify({'slots': slots})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all()
+    app.run(port=5000, debug=True)
+    
+    
