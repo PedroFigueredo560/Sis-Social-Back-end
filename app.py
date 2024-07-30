@@ -291,26 +291,26 @@ def get_user_func(cpf):
     func = Funcionario.query.filter_by(cpf=cpf).first()
     
     if func:
-        return jsonify({'nome_func': func.name_func, 'cpf': func.cpf, 'job': func.job,'user_func': func.user_func, 'password_func': func.user_password})
+        return jsonify({'nome_func': func.name_func, 'cpf': func.cpf, 'job': func.job,'user_func': func.user_func, 'password_func': func.password_func})
     else:
         return jsonify({'error': 'User not found!'})
 
-@app.route('/update_funcionario/<cpf>', methods=['PUT'])
-def update_funcionario(cpf):
+@app.route('/update_funcionario', methods=['PUT'])
+def update_funcionario():
     data = request.get_json()
     try:
-        funcionario = Funcionario.query.get(cpf)
+        funcionario = Funcionario.query.get(data.get('cpf'))
         if not funcionario:
             return jsonify({'error': 'Agendamento não encontrado'}), 404
 
         funcionario.cpf = data.get('cpf', funcionario.cpf)
-        funcionario.nome_func = data.get('nome', funcionario.nome_func)
+        funcionario.name_func = data.get('nome_func', funcionario.name_func)
         funcionario.job = data.get('job', funcionario.job)
-        funcionario.user_func = data.get('user', funcionario.user_func)
-        funcionario.password_func = data.get('descricao', funcionario.password_func)
+        funcionario.user_func = data.get('user_func', funcionario.user_func)
+        funcionario.password_func = data.get('password_func', funcionario.password_func)
         
         db.session.commit()
-        return jsonify(funcionario.to_dictionary()), 200
+        return jsonify({'message': 'Editado com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
         print(f"Error: {e}")
