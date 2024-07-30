@@ -316,10 +316,11 @@ def update_funcionario():
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
     
-@app.route('/delete_funcionario/<int:id>', methods=['DELETE'])
-def delete_funcionario(id):
+@app.route('/delete_funcionario', methods=['DELETE'])
+def delete_funcionario():
+    data = request.get_json()
     try:
-        funcionario = Funcionario.query.get(id)
+        funcionario = Funcionario.query.get(data)
         if not funcionario:
             return jsonify({'error': 'Funcionário não encontrado'}), 404
         db.session.delete(funcionario)
