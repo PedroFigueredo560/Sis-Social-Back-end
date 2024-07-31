@@ -226,6 +226,8 @@ from functools import wraps
 import pytz
 import jwt
 from model.funcionario import Funcionario
+from model.financeiro import Financa
+from marshmallow import Schema, fields, ValidationError  
 
 # Configuração do CORS
 CORS(app)
@@ -421,6 +423,63 @@ def available_slots():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
+
+
+@app.route('/create_finac', methods=['POST'])
+def create_finac():
+    data = request.json
+    try:
+        new_Financa = Financa(
+            descricao=data.get('descricao'),
+            valor=data.get('valor'),
+            categoria=data.get('categoria'),
+            data_reg=data.get('data_reg'),
+        )
+        db.session.add(new_Financa)
+        db.session.commit()
+        return jsonify({'message': 'Transação registrada com sucesso'}), 201
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/delete_finac', methods=['DELETE'])
+def delete_finac():
+  finac = Financa.query.get(request.json.get('id'))
+  if finac is None:
+    return jsonify({'error': 'Financial already deleted or not found!'}), 404
+  
+  db.session.delete(finac)
+  db.session.commit()
+  
+  return jsonify({'message': 'Financial deleted successfully!'}), 200
+    
+@app.route('/get_finac', methods=['GET'])
+def get_finac():
+    # Fetch all Financa objects using query.all()
+    financas = Financa.query.all()
+
+    finac_data = [
+    {'id': finac.id, 'data_reg': finac.data_reg, 'descricao': finac.descricao, 'categoria': finac.categoria, 'valor': finac.valor}
+    for finac in financas
+]
+    # Return the JSON-formatted data
+    return jsonify(finac_data)
+
+@app.route('/update_finac/<int:id>', methods=['PUT'])
+def update_finac(id):
+  data = request.get_json()
+  financa = Financa.query.get(id)
+  if financa is None:
+    return jsonify({'error': 'Transação não encontrada'}), 404
+
+  financa.descricao = data.get('descricao', financa.descricao)
+  financa.valor = data.get('valor', financa.valor)
+  financa.categoria = data.get('categoria',financa.categoria)
+  # Atualize outros campos conforme necessário
+
+  db.session.commit()
+  return jsonify({'message': 'Transação atualizada com sucesso'}), 200
+    
 
 if __name__ == '__main__':
     with app.app_context():
