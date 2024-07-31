@@ -234,7 +234,7 @@ app.config['SECRET_KEY'] = '0098766754'
 
 @app.route('/create_ben', methods=['POST'])
 def create_ben():
-    data = request.json
+    data = request.get_json()
     try:
         new_beneficiario = Beneficiario(
             name_ben=data.get('name_ben'),
@@ -247,6 +247,60 @@ def create_ben():
         db.session.commit()
         return jsonify({'message': 'Beneficiário criado com sucesso'}), 201
     except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/get_ben', methods = ['GET'])
+def get_ben():
+    try:
+        bens = Beneficiario.query.all()
+        return jsonify([ben.to_dictionary() for ben in bens]), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/get_beneficiario/<cpf>', methods = ['GET'])
+def get_user_ben(cpf):    
+    ben = Beneficiario.query.filter_by(cpf=cpf).first()
+    
+    if ben:
+        return jsonify({'nome_ben': ben.name_ben, 'cpf': ben.cpf, 'services': ben.services,'user_ben': ben.user_ben, 'password_ben': ben.password_ben})
+    else:
+        return jsonify({'error': 'User not found!'})
+    
+@app.route('/update_beneficiario', methods=['PUT'])
+def update_beneficiario():
+    data = request.get_json()
+    try:
+        beneficiario = Beneficiario.query.get(data.get('cpf'))
+        if not beneficiario:
+            return jsonify({'error': 'Beneficiário não encontrado'}), 404
+
+        beneficiario.cpf = data.get('cpf', beneficiario.cpf)
+        beneficiario.name_ben = data.get('nome_ben', beneficiario.name_ben)
+        beneficiario.services = data.get('services', beneficiario.services)
+        beneficiario.user_ben = data.get('user_ben', beneficiario.user_ben)
+        beneficiario.password_ben = data.get('password_ben', beneficiario.password_ben)
+        
+        db.session.commit()
+        return jsonify({'message': 'Editado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/delete_beneficiario', methods=['DELETE'])
+def delete_beneficiario():
+    data = request.get_json()
+    try:
+        beneficiario = Beneficiario.query.get(data)
+        if not beneficiario:
+            return jsonify({'error': 'Beneficiário não encontrado'}), 404
+        db.session.delete(beneficiario)
+        db.session.commit()
+        return jsonify({'message': 'Beneficiário deletado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
 
@@ -277,6 +331,24 @@ def check_cpf(cpf):
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
     
+@app.route('/create_func', methods=['POST'])
+def create_func():
+    data = request.get_json()
+    try:
+        new_funcionario = Funcionario(
+            name_func=data.get('name_func'),
+            cpf=data.get('cpf'),
+            job=data.get('job'),
+            user_func=data.get('user_func'),
+            password_func=data.get('password_func')
+        )
+        db.session.add(new_funcionario)
+        db.session.commit()
+        return jsonify({'message': 'Funcionario criado com sucesso'}), 201
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
 @app.route('/get_func', methods = ['GET'])
 def get_func():
     try:
@@ -301,7 +373,7 @@ def update_funcionario():
     try:
         funcionario = Funcionario.query.get(data.get('cpf'))
         if not funcionario:
-            return jsonify({'error': 'Agendamento não encontrado'}), 404
+            return jsonify({'error': 'Funcionario não encontrado'}), 404
 
         funcionario.cpf = data.get('cpf', funcionario.cpf)
         funcionario.name_func = data.get('nome_func', funcionario.name_func)
