@@ -228,6 +228,7 @@ import jwt
 from model.funcionario import Funcionario
 from model.financeiro import Financa
 from marshmallow import Schema, fields, ValidationError  
+from model.servicos import Servicos
 
 # Configuração do CORS
 CORS(app)
@@ -400,6 +401,85 @@ def delete_funcionario():
         db.session.delete(funcionario)
         db.session.commit()
         return jsonify({'message': 'Funcionário deletado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/create_servicos', methods=['POST'])
+def create_servicos():
+    data = request.get_json()
+    try:
+        new_servicos = Servicos(
+            nome_servicos=data.get('nome_servicos'),
+            criterios=data.get('criterios'),
+            horario=data.get('horario'),
+            data=data.get('data'),
+            locais=data.get('locais')
+        )
+        db.session.add(new_servicos)
+        db.session.commit()
+        return jsonify({'message': 'Serviço criado com sucesso'}), 201
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/get_servicos', methods = ['GET'])
+def get_servicos():
+    try:
+        servs = Servicos.query.all()
+        return jsonify([serv.to_dictionary() for serv in servs]), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/get_servico/<servico_name>', methods=['GET'])
+def get_servico(servico_name):
+
+    servico = Servicos.query.filter_by(nome_servicos=servico_name).first()
+
+    if servico:
+        return jsonify({
+            'nome_servicos': servico.nome_servicos,
+            'criterios': servico.criterios,
+            'horario': servico.horario,
+            'data': servico.data,
+            'locais': servico.locais
+        })
+    else:
+        return jsonify({'error': 'Service not found!'}), 404
+
+@app.route('/update_servico', methods=['PUT'])
+def update_servico():
+    data = request.get_json()
+    try:
+        serv = Servicos.query.get(data.get('nome_servicos'))
+        if not serv:
+            return jsonify({'error': 'Serviço não encontrado'}), 404
+
+        serv.nome_servicos = data.get('nome_servicos', serv.nome_servicos)
+        serv.criterios = data.get('criterios', serv.criterios)
+        serv.horario = data.get('horario', serv.horario)
+        serv.data = data.get('data', serv.data)
+        serv.locais = data.get('locais', serv.locais)
+        
+        db.session.commit()
+        return jsonify({'message': 'Editado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/delete_servico', methods=['DELETE'])
+def delete_servico():
+    data = request.get_json()
+    try:
+        serv = Servicos.query.get(data)
+        if not serv:
+            return jsonify({'error': 'Serviço não encontrado'}), 404
+        db.session.delete(serv)
+        db.session.commit()
+        return jsonify({'message': 'Serviço deletado com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
         print(f"Error: {e}")
