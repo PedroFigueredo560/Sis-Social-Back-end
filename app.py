@@ -251,6 +251,7 @@ def create_ben():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
+
 @app.route('/validate_login_ben', methods=['POST'])
 def validate_login_ben():
     data = request.get_json()
@@ -265,6 +266,7 @@ def validate_login_ben():
         return jsonify({'message': 'Logado com sucesso', 'token': token})
     else:
         return jsonify({'message': 'Usuário não encontrado'}), 401
+
 @app.route('/check_cpf/<string:cpf>', methods=['GET'])
 def check_cpf(cpf):
     try:
@@ -280,9 +282,54 @@ def check_cpf(cpf):
 @app.route('/get_func', methods = ['GET'])
 def get_func():
     try:
-        funcs = Agendamento.query.all()
+        funcs = Funcionario.query.all()
         return jsonify([func.to_dictionary() for func in funcs]), 200
     except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/get_funcionario/<cpf>', methods = ['GET'])
+def get_user_func(cpf):    
+    func = Funcionario.query.filter_by(cpf=cpf).first()
+    
+    if func:
+        return jsonify({'nome_func': func.name_func, 'cpf': func.cpf, 'job': func.job,'user_func': func.user_func, 'password_func': func.password_func})
+    else:
+        return jsonify({'error': 'User not found!'})
+
+@app.route('/update_funcionario', methods=['PUT'])
+def update_funcionario():
+    data = request.get_json()
+    try:
+        funcionario = Funcionario.query.get(data.get('cpf'))
+        if not funcionario:
+            return jsonify({'error': 'Agendamento não encontrado'}), 404
+
+        funcionario.cpf = data.get('cpf', funcionario.cpf)
+        funcionario.name_func = data.get('nome_func', funcionario.name_func)
+        funcionario.job = data.get('job', funcionario.job)
+        funcionario.user_func = data.get('user_func', funcionario.user_func)
+        funcionario.password_func = data.get('password_func', funcionario.password_func)
+        
+        db.session.commit()
+        return jsonify({'message': 'Editado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/delete_funcionario', methods=['DELETE'])
+def delete_funcionario():
+    data = request.get_json()
+    try:
+        funcionario = Funcionario.query.get(data)
+        if not funcionario:
+            return jsonify({'error': 'Funcionário não encontrado'}), 404
+        db.session.delete(funcionario)
+        db.session.commit()
+        return jsonify({'message': 'Funcionário deletado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
 
@@ -377,6 +424,7 @@ def delete_agendamento(id):
         db.session.rollback()
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
+    
 @app.route('/available_slots', methods=['GET'])
 def available_slots():
     date_str = request.args.get('date')
