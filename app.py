@@ -338,6 +338,7 @@ def check_cpf(cpf):
 def create_func():
     data = request.get_json()
     try:
+        print(f"Received data: {data}")
         new_funcionario = Funcionario(
             name_func=data.get('name_func'),
             cpf=data.get('cpf'),
@@ -349,6 +350,7 @@ def create_func():
         db.session.commit()
         return jsonify({'message': 'Funcionario criado com sucesso'}), 201
     except Exception as e:
+        db.session.rollback()
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
     
@@ -378,14 +380,14 @@ def update_funcionario():
         if not funcionario:
             return jsonify({'error': 'Funcionario não encontrado'}), 404
 
-        funcionario.cpf = data.get('cpf', funcionario.cpf)
-        funcionario.name_func = data.get('nome_func', funcionario.name_func)
+        # Atualize apenas os campos fornecidos
+        funcionario.name_func = data.get('name_func', funcionario.name_func)
         funcionario.job = data.get('job', funcionario.job)
         funcionario.user_func = data.get('user_func', funcionario.user_func)
         funcionario.password_func = data.get('password_func', funcionario.password_func)
         
         db.session.commit()
-        return jsonify({'message': 'Editado com sucesso'}), 200
+        return jsonify({'message': 'Funcionario editado com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
         print(f"Error: {e}")
