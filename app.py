@@ -214,7 +214,7 @@ if __name__ == '__main__':
 
 # CONEXÃO FUNCIONANDO COM O FRONT-END
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_mail import Mail, Message
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -231,6 +231,8 @@ from model.funcionario import Funcionario
 from model.financeiro import Financa
 from marshmallow import Schema, fields, ValidationError  
 from model.servicos import Servicos
+from werkzeug.utils import secure_filename
+import os
 
 # Configuração do CORS
 CORS(app)
@@ -749,6 +751,51 @@ def update_finac(id):
   return jsonify({'message': 'Transação atualizada com sucesso'}), 200
     
 
+# Configuring the upload folder
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)  # Create the folder if it doesn't exist
+
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if request.method == 'POST':
+        uploaded_file = request.files.get('file')
+        if uploaded_file:
+            allowed_extensions = ['pdf']
+            filename = secure_filename(uploaded_file.filename)
+            if filename.split('.')[-1].lower() not in allowed_extensions:
+                return jsonify({'error': 'Invalid file type. Only PDFs allowed.'}), 400
+
+            # Save the file securely
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            uploaded_file.save(file_path)
+
+            return jsonify({'message': 'File uploaded successfully.'}), 201
+        else:
+            return jsonify({'error': 'No file uploaded.'}), 400
+    return jsonify({'error': 'Invalid request method.'}), 405
+
+
+@app.route('/uploaded-files', methods=['GET'])
+def list_uploaded_files():
+    files = []
+    try:
+        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+            if filename.endswith('.pdf'):
+                files.append({'name': filename})
+        return jsonify({'files': files}), 200
+    except OSError as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/download/<filename>', methods=['GET'])
+def download_file(filename):
+    # Print the received filename for debugging
+    print(f"Downloading file: {filename}")
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
+
+    
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
