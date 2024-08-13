@@ -216,11 +216,13 @@ if __name__ == '__main__':
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_mail import Mail, Message
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime, timezone, timedelta
 from database import app, db
 from model.beneficiario import Beneficiario
 from model.agendamento import Agendamento
 from model.horarios_disponiveis import DisponibilidadeHorarios
-from datetime import datetime, timezone, timedelta
 from model.auth_decorator import token_required
 from functools import wraps
 import pytz
@@ -234,6 +236,23 @@ from model.servicos import Servicos
 CORS(app)
 
 app.config['SECRET_KEY'] = '0098766754'
+
+# Configuração do Flask-Mail
+smtp_server = "smtp.gmail.com"
+smtp_port = 587
+app.config['MAIL_USERNAME'] = 'usuarioEmail'
+app.config['MAIL_PASSWORD'] = 'senha'
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+
+mail = Mail(app)
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+def send_email(to, subject, body):
+    msg = Message(subject, sender='usuarioEmail', recipients=[to])
+    msg.body = body
+    mail.send(msg)
 
 @app.route('/create_ben', methods=['POST'])
 def create_ben():
@@ -307,20 +326,30 @@ def delete_beneficiario():
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
 
-@app.route('/validate_login_ben', methods=['POST'])
-def validate_login_ben():
+@app.route('/validate_login', methods=['POST'])
+def validate_login():
     data = request.get_json()
     user = data.get('user')
     password = data.get('password')
 
     ben = Beneficiario.query.filter_by(user_ben=user, password_ben=password).first()
-
     if ben:
-        # Gera um token JWT
-        token = jwt.encode({'user': ben.user_ben}, app.config['SECRET_KEY'], algorithm='HS256')
-        return jsonify({'message': 'Logado com sucesso', 'token': token})
-    else:
-        return jsonify({'message': 'Usuário não encontrado'}), 401
+        token = jwt.encode({
+            'user': ben.user_ben,
+            'role': 'beneficiario'
+        }, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'message': 'Logado como beneficiário', 'token': token})
+
+    func = Funcionario.query.filter_by(user_func=user, password_func=password).first()
+    if func:
+        token = jwt.encode({
+            'user': func.user_func,
+            'role': 'funcionario'
+        }, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'message': 'Logado como funcionário', 'token': token})
+
+    return jsonify({'message': 'Usuário não encontrado'}), 401
+
 
 @app.route('/check_cpf/<string:cpf>', methods=['GET'])
 def check_cpf(cpf):
@@ -491,19 +520,34 @@ def delete_servico():
 @token_required
 def create_agendamento():
     data = request.get_json()
+    print(f"Dados recebidos para agendamento: {data}")
+
     try:
+        if 'cpf' not in data or 'data' not in data or 'nome' not in data or 'telefone' not in data or 'descricao' not in data or 'status' not in data:
+            print("Dados insuficientes recebidos.")
+            return jsonify({'error': 'Dados insuficientes para criar agendamento'}), 400
+
+        # Verificar se o beneficiário existe
         beneficiario = Beneficiario.query.filter_by(cpf=data['cpf']).first()
         if not beneficiario:
+            print(f"Beneficiário com CPF {data['cpf']} não encontrado.")
             return jsonify({'error': 'CPF não encontrado na base de dados'}), 400
 
-        agendamento_data = datetime.fromisoformat(data['data']).astimezone(timezone.utc)
-        print(f"Agendamento data recebida: {agendamento_data}")
+        # Converter e verificar a data do agendamento
+        try:
+            agendamento_data = datetime.fromisoformat(data['data']).astimezone(timezone.utc)
+            print(f"Data do agendamento convertida: {agendamento_data}")
+        except ValueError as ve:
+            print(f"Erro ao converter a data do agendamento: {ve}")
+            return jsonify({'error': 'Data inválida'}), 400
 
-        # Verifica se já existe um agendamento para a mesma data e hora
+        # Verificar se já existe um agendamento para a mesma data e hora
         existing_appointment = Agendamento.query.filter_by(data=agendamento_data).first()
         if existing_appointment:
+            print(f"Já existe um agendamento para a data e hora: {agendamento_data}")
             return jsonify({"error": "Já existe um agendamento para esta data e hora."}), 400
 
+        # Criar o novo agendamento
         new_agendamento = Agendamento(
             cpf=data['cpf'],
             nome=data['nome'],
@@ -516,11 +560,33 @@ def create_agendamento():
         )
         db.session.add(new_agendamento)
         db.session.commit()
+        print(f"Novo agendamento criado: {new_agendamento.to_dictionary()}")
+
+        # Enviar email de confirmação
+        if new_agendamento.email_notification:
+            print(f"Enviando email de confirmação para: {beneficiario.user_ben}")
+            send_email(
+                to=beneficiario.user_ben,
+                subject="Confirmação de Agendamento",
+                body=f"Seu agendamento está confirmado para {new_agendamento.data}."
+            )
+
+            # Agendar o envio do alerta um dia antes
+            alert_time = new_agendamento.data - timedelta(days=1)
+            print(f"Agendando alerta para: {alert_time}")
+            scheduler.add_job(
+                send_email,
+                'date',
+                run_date=alert_time,
+                args=[beneficiario.user_ben, "Lembrete de Agendamento", f"Seu agendamento é amanhã às {new_agendamento.data}."]
+            )
+
         return jsonify(new_agendamento.to_dictionary()), 201
     except Exception as e:
         db.session.rollback()
-        print(f"Error: {e}")
+        print(f"Erro ao criar agendamento: {e}")
         return jsonify({'error': str(e)}), 400
+
 
 @app.route('/agendamentos', methods=['GET'])
 def get_agendamentos():

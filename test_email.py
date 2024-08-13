@@ -1,24 +1,25 @@
-import smtplib
-from email.mime.text import MIMEText
+from flask import Flask
+from flask_mail import Mail, Message
 
-def send_test_email(to_email):
-    from_email = "jainer469@gmail.com"
-    subject = "Teste de Envio de E-mail"
-    body = "Este é um teste para verificar se o e-mail está sendo enviado corretamente."
-    
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = from_email
-    msg['To'] = to_email
+app = Flask(__name__)
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USERNAME'] = 'email'
+app.config['MAIL_PASSWORD'] = 'senha'
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
 
+mail = Mail(app)
+
+@app.route('/send_email')
+def send_email():
     try:
-        with smtplib.SMTP('smtp.dominio.com', 587) as server:
-            server.starttls()
-            server.login('jainer469@gmail.com', 'sua_senha')
-            server.send_message(msg)
-            print(f"E-mail de teste enviado para {to_email}")
+        msg = Message("Teste de E-mail", sender="email", recipients=["recipient@example.com"])
+        msg.body = "Texto com acentuação: áéíóú"
+        mail.send(msg)
+        return "E-mail enviado com sucesso!"
     except Exception as e:
-        print(f"Erro ao enviar e-mail: {e}")
+        return f"Erro ao enviar e-mail: {e}"
 
-# Teste o envio
-send_test_email('jainer469@gmail.com')
+if __name__ == '__main__':
+    app.run(port=5001, debug=True)
