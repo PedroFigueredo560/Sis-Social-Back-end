@@ -222,6 +222,7 @@ from datetime import datetime, timezone, timedelta
 from database import app, db
 from model.beneficiario import Beneficiario
 from model.agendamento import Agendamento
+from model.atendimento import Atendimento
 from model.horarios_disponiveis import DisponibilidadeHorarios
 from model.auth_decorator import token_required
 from functools import wraps
@@ -795,6 +796,78 @@ def download_file(filename):
     print(f"Downloading file: {filename}")
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
+    
+@app.route('/create_atendimento', methods=['POST'])
+def create_atendimento():
+    data = request.get_json()
+    try:
+        new_atendimento = Atendimento(
+            cpfFunc=data.get('cpfFunc'),
+            cpfBen=data.get('cpfBen'),
+            assunto=data.get('assunto'),
+            data=data.get('data'),
+            duracao=data.get('duracao')
+        )
+        db.session.add(new_atendimento)
+        db.session.commit()
+        return jsonify({'message': 'Atendimento criado com sucesso'}), 201
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/get_atendimentos', methods=['GET'])
+def get_atendimentos():
+    try:
+        atendimentos = Atendimento.query.all()
+        return jsonify([atendimento.to_dictionary() for atendimento in atendimentos]), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/get_atendimento/<int:id>', methods=['GET'])
+def get_atendimento(id):    
+    atendimento = Atendimento.query.get(id)
+    
+    if atendimento:
+        return jsonify(atendimento.to_dictionary()), 200
+    else:
+        return jsonify({'error': 'Atendimento não encontrado'}), 404
+
+@app.route('/update_atendimento/<int:id>', methods=['PUT'])
+def update_atendimento(id):
+    data = request.get_json()
+    try:
+        atendimento = Atendimento.query.get(id)
+        if not atendimento:
+            return jsonify({'error': 'Atendimento não encontrado'}), 404
+
+        atendimento.cpfFunc = data.get('cpfFunc', atendimento.cpfFunc)
+        atendimento.cpfBen = data.get('cpfBen', atendimento.cpfBen)
+        atendimento.assunto = data.get('assunto', atendimento.assunto)
+        atendimento.data = data.get('data', atendimento.data)
+        atendimento.duracao = data.get('duracao', atendimento.duracao)
+        
+        db.session.commit()
+        return jsonify({'message': 'Atendimento atualizado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/delete_atendimento', methods=['DELETE'])
+def delete_atendimento():
+    data = request.get_json()
+    try:
+        atendimento = Atendimento.query.get(data.get('id'))
+        if not atendimento:
+            return jsonify({'error': 'Atendimento não encontrado'}), 404
+        db.session.delete(atendimento)
+        db.session.commit()
+        return jsonify({'message': 'Atendimento deletado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)}), 400
     
 if __name__ == '__main__':
     with app.app_context():
