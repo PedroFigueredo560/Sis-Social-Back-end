@@ -1,11 +1,15 @@
+from sqlalchemy import Column, Integer
 from database import db
 
 class Servicos(db.Model):
-    nome_servicos = db.Column(db.String(50), nullable=False)  # Use snake_case for variable names
-    criterios = db.Column(db.String(50), nullable=False)  # Consistent capitalization
-    horario = db.Column(db.String(8), nullable=False, primary_key=True)
-    data = db.Column(db.String(10), nullable=False)
-    locais = db.Column(db.String(50), nullable=False)
+    __tablename__ = 'servicos'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nome_servicos = Column(db.String(50), nullable=False)
+    criterios = Column(db.String(50), nullable=False)
+    horario = Column(db.String(8))
+    data = Column(db.String(10))
+    locais = Column(db.String(50))
 
     def __init__(self, name, criterios, horario, data, locais):
         self.nome_servicos = name
