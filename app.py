@@ -352,23 +352,23 @@ def create_agendamento():
         print(f"Novo agendamento criado: {new_agendamento.to_dictionary()}")
 
         # Enviar email de confirmação
-        if new_agendamento.email_notification:
-            print(f"Enviando email de confirmação para: {beneficiario.user_ben}")
-            send_email(
-                to=beneficiario.user_ben,
-                subject="Confirmação de Agendamento",
-                body=f"Seu agendamento está confirmado para {new_agendamento.data}."
-            )
+        # if new_agendamento.email_notification:
+        #     print(f"Enviando email de confirmação para: {beneficiario.user_ben}")
+        #     send_email(
+        #         to=beneficiario.user_ben,
+        #         subject="Confirmação de Agendamento",
+        #         body=f"Seu agendamento está confirmado para {new_agendamento.data}."
+        #     )
 
-            # Agendar o envio do alerta um dia antes
-            alert_time = new_agendamento.data - timedelta(days=1)
-            print(f"Agendando alerta para: {alert_time}")
-            scheduler.add_job(
-                send_email,
-                'date',
-                run_date=alert_time,
-                args=[beneficiario.user_ben, "Lembrete de Agendamento", f"Seu agendamento é amanhã às {new_agendamento.data}."]
-            )
+        #     # Agendar o envio do alerta um dia antes
+        #     alert_time = new_agendamento.data - timedelta(days=1)
+        #     print(f"Agendando alerta para: {alert_time}")
+        #     scheduler.add_job(
+        #         send_email,
+        #         'date',
+        #         run_date=alert_time,
+        #         args=[beneficiario.user_ben, "Lembrete de Agendamento", f"Seu agendamento é amanhã às {new_agendamento.data}."]
+        #     )
 
         return jsonify(new_agendamento.to_dictionary()), 201
     except Exception as e:
