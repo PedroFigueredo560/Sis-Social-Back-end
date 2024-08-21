@@ -90,6 +90,8 @@ def update_beneficiario():
 
         beneficiario.cpf = data.get('cpf', beneficiario.cpf)
         beneficiario.name_ben = data.get('nome_ben', beneficiario.name_ben)
+        beneficiario.telefone = data.get('telefone', beneficiario.telefone)
+        beneficiario.endereco = data.get('endereco', beneficiario.endereco)
         beneficiario.servicos = data.get('servicos', beneficiario.servicos)
         beneficiario.user_ben = data.get('user_ben', beneficiario.user_ben)
         beneficiario.password_ben = data.get('password_ben', beneficiario.password_ben)
