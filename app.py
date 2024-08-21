@@ -18,6 +18,7 @@ from marshmallow import Schema, fields, ValidationError
 from model.servicos import Servicos
 from werkzeug.utils import secure_filename
 import os
+from flask_socketio import SocketIO, send, emit, join_room, leave_room
 
 # Configuração do CORS
 CORS(app)
@@ -657,6 +658,35 @@ def delete_atendimento():
         db.session.rollback()
         print(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
+    
+    
+# Configuração do SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
+@socketio.on('join')
+def handle_join(data):
+    room = data['room']
+    join_room(room)
+    emit('message', {'msg': f'{data["user"]} has joined the room {room}'}, room=room)
+
+@socketio.on('leave')
+def handle_leave(data):
+    room = data['room']
+    leave_room(room)
+    emit('message', {'msg': f'{data["user"]} has left the room {room}'}, room=room)
+
+@socketio.on('message')
+def handle_message(data):
+    room = data['room']
+    send({'msg': data['msg'], 'user': data['user']}, room=room)   
     
 if __name__ == '__main__':
     with app.app_context():
