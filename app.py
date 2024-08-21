@@ -542,50 +542,53 @@ def update_finac(id):
   return jsonify({'message': 'Transação atualizada com sucesso'}), 200
     
 
-# Configuring the upload folder
+# Configurando a pasta de upload
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)  # Create the folder if it doesn't exist
-
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)  # Cria a pasta se não existir
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if request.method == 'POST':
+        cpf = request.form.get('cpf')  # CPF do beneficiário vindo do formulário
         uploaded_file = request.files.get('file')
-        if uploaded_file:
-            allowed_extensions = ['pdf']
-            filename = secure_filename(uploaded_file.filename)
-            if filename.split('.')[-1].lower() not in allowed_extensions:
-                return jsonify({'error': 'Invalid file type. Only PDFs allowed.'}), 400
+        
+        if not cpf or not uploaded_file:
+            return jsonify({'error': 'CPF or file not provided.'}), 400
 
-            # Save the file securely
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            uploaded_file.save(file_path)
+        allowed_extensions = ['pdf']
+        filename = secure_filename(uploaded_file.filename)
+        if filename.split('.')[-1].lower() not in allowed_extensions:
+            return jsonify({'error': 'Invalid file type. Only PDFs allowed.'}), 400
+        
+        # Cria uma pasta para o CPF se não existir
+        cpf_folder = os.path.join(app.config['UPLOAD_FOLDER'], cpf)
+        os.makedirs(cpf_folder, exist_ok=True)
+        
+        # Salva o arquivo na pasta do CPF
+        file_path = os.path.join(cpf_folder, filename)
+        uploaded_file.save(file_path)
 
-            return jsonify({'message': 'File uploaded successfully.'}), 201
-        else:
-            return jsonify({'error': 'No file uploaded.'}), 400
-    return jsonify({'error': 'Invalid request method.'}), 405
-
+        return jsonify({'message': 'File uploaded successfully.'}), 201
 
 @app.route('/uploaded-files', methods=['GET'])
 def list_uploaded_files():
-    files = []
+    files_by_cpf = {}
     try:
-        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
-            if filename.endswith('.pdf'):
-                files.append({'name': filename})
-        return jsonify({'files': files}), 200
+        for cpf in os.listdir(app.config['UPLOAD_FOLDER']):
+            cpf_folder = os.path.join(app.config['UPLOAD_FOLDER'], cpf)
+            if os.path.isdir(cpf_folder):
+                files = [{'name': file} for file in os.listdir(cpf_folder) if file.endswith('.pdf')]
+                files_by_cpf[cpf] = files
+        
+        return jsonify({'files_by_cpf': files_by_cpf}), 200
     except OSError as e:
         return jsonify({'error': str(e)}), 500
 
-
-@app.route('/download/<filename>', methods=['GET'])
-def download_file(filename):
-    # Print the received filename for debugging
-    print(f"Downloading file: {filename}")
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
-
+@app.route('/download/<cpf>/<filename>', methods=['GET'])
+def download_file(cpf, filename):
+    cpf_folder = os.path.join(app.config['UPLOAD_FOLDER'], cpf)
+    return send_from_directory(cpf_folder, filename, as_attachment=True)
     
 @app.route('/create_atendimento', methods=['POST'])
 def create_atendimento():
