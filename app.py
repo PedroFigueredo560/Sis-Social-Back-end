@@ -584,6 +584,24 @@ def list_uploaded_files():
         return jsonify({'files_by_cpf': files_by_cpf}), 200
     except OSError as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/uploaded_files_by_cpf/<cpfRequested>', methods=['GET'])
+def list_uploaded_files_by_cpf(cpfRequested):
+  files_by_cpf = {}
+  try:
+    # Get the CPF from the request parameters
+    cpf = cpfRequested
+
+    # Iterate over the CPF folders
+    for cpf_folder in os.listdir(app.config['UPLOAD_FOLDER']):
+      if cpf_folder == cpf:  # Check if the CPF matches
+        files = [{'name': file} for file in os.listdir(cpf_folder) if file.endswith('.pdf')]
+        files_by_cpf[cpf] = files
+        break  # Exit the loop once the matching CPF is found
+
+    return jsonify({'files_by_cpf': files_by_cpf}), 200
+  except OSError as e:
+    return jsonify({'error': str(e)}), 500
 
 @app.route('/download/<cpf>/<filename>', methods=['GET'])
 def download_file(cpf, filename):
