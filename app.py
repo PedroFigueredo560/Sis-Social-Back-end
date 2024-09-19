@@ -235,7 +235,7 @@ def create_servicos():
     data = request.get_json()
     try:
         new_servicos = Servicos(
-            nome_servicos=data.get('nome_servicos'),
+            name=data.get('nome_servicos'),
             criterios=data.get('criterios'),
             horario=data.get('horario'),
             data=data.get('data'),

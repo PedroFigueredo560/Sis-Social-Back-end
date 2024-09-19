@@ -4,8 +4,7 @@ from database import db
 class Servicos(db.Model):
     __tablename__ = 'servicos'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nome_servicos = Column(db.String(50), nullable=False)
+    nome_servicos = Column(db.String(50), nullable=False, primary_key=True)
     criterios = Column(db.String(50), nullable=False)
     horario = Column(db.String(8))
     data = Column(db.String(10))
